@@ -243,9 +243,6 @@ def main():
         # glVertex3f(0.0, 5.0, 0.0)
         # glEnd()
 
-        # glLoadIdentity()
-        #light_position[2] = light_position[2] - 0.1
-        # glTranslatef(x, y, z)
         pygame.display.flip()
         pygame.time.wait(10)
         pyramid_rotation_d += 1
