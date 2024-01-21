@@ -89,3 +89,26 @@ def main():
 
 
 main()
+
+if event.key == pygame.K_w:
+    camera_translation[2] += 0.5
+if event.key == pygame.K_s:
+    camera_translation[2] -= 0.5
+if event.key == pygame.K_a:
+    camera_translation[0] += 0.5
+if event.key == pygame.K_d:
+    camera_translation[0] -= 0.5
+if event.key == pygame.K_SPACE:
+    camera_translation[1] -= 0.5
+if event.key == pygame.K_LSHIFT:
+    camera_translation[1] += 0.5
+if event.key == pygame.K_e:
+    camera_rotation[0] += 5
+    camera_rotation[1] = 0
+    camera_rotation[2] = 1
+    camera_rotation[3] = 0
+if event.key == pygame.K_q:
+    camera_rotation[0] -= 5
+    camera_rotation[1] = 0
+    camera_rotation[2] = 1
+    camera_rotation[3] = 0
