@@ -213,6 +213,9 @@ def update_light_position():
 
 
 def main():
+    speed = 0.02
+    acc = 0.01
+    pos = 5.0
     zoom_factor = 1
     n = int(input("Podaj liczbę poziomów piramidy\n"))
     texturesFlag = True
@@ -307,6 +310,25 @@ def main():
         #print(light_position1)
         glPopMatrix()
         glEnable(GL_LIGHTING)
+
+
+
+        glPushMatrix()
+        glTranslatef(-2, 5, -2)
+        glTranslatef(0.0, pos - 5.0, 0.0)
+        quadric1 = gluNewQuadric()
+        gluSphere(quadric1, 0.43, 10, 10)
+        glPopMatrix()
+
+        pos -= speed
+        speed += (speed * acc)
+        if abs(speed) < 0.003:
+            speed = -speed
+            acc = -acc
+        if pos < 0.1:
+            speed = -speed * 0.6
+            acc = -acc
+
 
         pygame.display.flip()
         pygame.time.wait(10)
