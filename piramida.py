@@ -51,11 +51,11 @@ edges = [
 mat_ambient = [1.0, 1.0, 1.0, 1.0]
 mat_diffuse = [1.0, 1.0, 1.0, 1.0]
 mat_specular = [1.0, 1.0, 1.0, 1.0]
-mat_shininess = 20.0
+mat_shininess = 10.0
 
 light_ambient = [0.0, 0.0, 0.0, 1.0]
 light_diffuse = [0.8, 0.8, 0.8, 1.0]
-light_diffuse2 = [0.0, 0.0, 0.5, 1.0]
+light_diffuse2 = [0.0, 0.0, 1.0, 1.0]
 light_specular = [1.0, 1.0, 1.0, 1.0]
 light_position = [0.0, 0.0, 0.0, 15.0]
 light_position2 = [2.0, 0.5, 0.0, 0.0]
@@ -94,7 +94,6 @@ def startup():
     glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, att_constant)
     glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, att_linear)
     glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, att_quadratic)
-
 
     glShadeModel(GL_SMOOTH)
     glEnable(GL_LIGHTING)
@@ -200,6 +199,7 @@ def pyramid():
         glVertex3f(tex[t][0], tex[t][1], tex[t][2])
     glEnd()
 
+
 def ground():
     glBegin(GL_QUADS)
     for i in range(4):
@@ -217,8 +217,8 @@ def update_light_position():
     light_y = light_radius * math.sin(math.radians(light_angle))
     light_position1 = [light_x, light_y, 0.0, 1.0]
     glLightfv(GL_LIGHT0, GL_POSITION, light_position1)
-    #print(light_position1)
-    light_angle += 1
+    print(light_position1)
+    light_angle += 1.2
 
 
 def main():
@@ -248,7 +248,7 @@ def main():
                [0.5, -1 / 3, -1 / 3],
                [0, -1 / 3, 2 / 3],
                [0, 2 / 3, 0], n)
-    #print(len(edges))
+    # print(len(edges))
     startup()
     camera_translation = [0, 0, 0]
     camera_rotation = [0, 0, 0]
@@ -290,7 +290,8 @@ def main():
                 if event.key == pygame.K_r:
                     glLightfv(GL_LIGHT1, GL_DIFFUSE, 1.0, 0.0, 0.0, 1.0)
                 if event.key == pygame.K_UP:
-                    zoom_factor -= 0.2
+                    if zoom_factor > 0:
+                        zoom_factor -= 0.2
                 if event.key == pygame.K_DOWN:
                     zoom_factor += 0.2
 
@@ -299,7 +300,7 @@ def main():
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluPerspective(90, (display[0] / display[1]), 0.1, 50.0)
-        gluLookAt(zoom_factor,  zoom_factor, zoom_factor, 0, 0, 0, 0, 1, 0)
+        gluLookAt(zoom_factor, zoom_factor, zoom_factor, 0, 0, 0, 0, 1, 0)
         glTranslatef(*camera_translation)
         glRotatef(camera_rotation[0], 1, 0, 0)
         glRotatef(camera_rotation[1], 0, 1, 0)
@@ -313,18 +314,18 @@ def main():
         glRotatef(-pyramid_rotation_d, *pyramid_rotation_xyz)
         glPopMatrix()
 
-
+        glPushMatrix()
         update_light_position()
+        glPopMatrix()
+
         glDisable(GL_LIGHTING)
         glPushMatrix()
         glTranslatef(light_position1[0], light_position1[1], light_position1[2])
         quadric = gluNewQuadric()
         gluSphere(quadric, 0.1, 10, 10)
-        #print(light_position1)
+        # print(light_position1)
         glPopMatrix()
         glEnable(GL_LIGHTING)
-
-
 
         glPushMatrix()
         glTranslatef(-2, 5, -2)
@@ -342,10 +343,9 @@ def main():
             speed = -speed * 0.6
             acc = -acc
 
-
         pygame.display.flip()
         pygame.time.wait(10)
-        pyramid_rotation_d += 0.1
+        pyramid_rotation_d += 0.05
 
 
 main()
