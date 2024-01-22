@@ -10,6 +10,8 @@ from PIL import Image
 
 light_angle = 0.0
 light_position1 = [1.0, 1.0, 1.0, 0.0]
+texture_0 = None
+texture_1 = None
 
 ground_vertices = (
     (-10, -1 / 3, -10),
@@ -67,7 +69,8 @@ att_quadratic = 0.001
 def startup():
     # glClearColor(0.0, 0.0, 0.0, 1.0)
     # glEnable(GL_DEPTH_TEST)
-
+    global texture_0
+    global texture_1
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient)
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
@@ -104,11 +107,17 @@ def startup():
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-    image = Image.open("tekstura.tga")
+    image0 = Image.open("tekstura.tga")
+    image1 = Image.open("trawa.tga")
 
-    glTexImage2D(
-        GL_TEXTURE_2D, 0, 3, image.size[0], image.size[1], 0,
-        GL_RGB, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGB", 0, -1)
+    texture_0 = (
+        GL_TEXTURE_2D, 0, 3, image0.size[0], image0.size[1], 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image0.tobytes("raw", "RGB", 0, -1)
+    )
+
+    texture_1 = (
+        GL_TEXTURE_2D, 0, 3, image1.size[0], image1.size[1], 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image1.tobytes("raw", "RGB", 0, -1)
     )
 
 
@@ -209,7 +218,7 @@ def update_light_position():
     light_position1 = [light_x, light_y, 0.0, 1.0]
     glLightfv(GL_LIGHT0, GL_POSITION, light_position1)
     #print(light_position1)
-    light_angle += 1.2
+    light_angle += 1
 
 
 def main():
@@ -223,6 +232,8 @@ def main():
     display = (1500, 850)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
     global light_position1
+    global texture_0
+    global texture_1
     gluPerspective(90, (display[0] / display[1]), 0.1, 50.0)
     glTranslatef(0.0, 0.0, -2)
     startup()
@@ -294,8 +305,10 @@ def main():
         glRotatef(camera_rotation[1], 0, 1, 0)
 
         glPushMatrix()
+        glTexImage2D(*texture_1)
         ground()
         glRotatef(pyramid_rotation_d, *pyramid_rotation_xyz)
+        glTexImage2D(*texture_0)
         pyramid()
         glRotatef(-pyramid_rotation_d, *pyramid_rotation_xyz)
         glPopMatrix()
