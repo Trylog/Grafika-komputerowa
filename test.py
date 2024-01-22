@@ -1,97 +1,252 @@
-import pygame
-from pygame.locals import *
+#!/usr/bin/env python3
+import sys
+
+from glfw.GLFW import *
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import math
 
-vertices = (
-    (1, -1, -1),
-    (1, 1, -1),
-    (-1, 1, -1),
-    (-1, -1, -1),
-    (1, -1, 1),
-    (1, 1, 1),
-    (-1, -1, 1),
-    (-1, 1, 1)
-)
+from PIL import Image
 
-edges = (
-    (0, 1),
-    (1, 2),
-    (2, 3),
-    (3, 0),
-    (4, 5),
-    (5, 6),
-    (6, 7),
-    (7, 4),
-    (0, 4),
-    (1, 5),
-    (2, 6),
-    (3, 7)
-)
 
-def draw_cube():
-    glBegin(GL_LINES)
-    for edge in edges:
-        for vertex in edge:
-            glVertex3fv(vertices[vertex])
+viewer = [0.0, 0.0, 10.0]
+
+theta = 0.0
+pix2angle = 1.0
+
+left_mouse_button_pressed = 0
+mouse_x_pos_old = 0
+delta_x = 0
+
+active_right_triangle = True
+active_top_triangle = True
+active_left_triangle = True
+active_bottom_triangle = True
+active_square = True
+
+mat_ambient = [1.0, 1.0, 1.0, 1.0]
+mat_diffuse = [1.0, 1.0, 1.0, 1.0]
+mat_specular = [1.0, 1.0, 1.0, 1.0]
+mat_shininess = 20.0
+
+light_ambient = [0.1, 0.1, 0.0, 1.0]
+light_diffuse = [0.8, 0.8, 0.0, 1.0]
+light_specular = [1.0, 1.0, 1.0, 1.0]
+light_position = [0.0, 0.0, 10.0, 1.0]
+
+att_constant = 1.0
+att_linear = 0.05
+att_quadratic = 0.001
+
+
+def startup():
+    update_viewport(None, 400, 400)
+    glClearColor(0.0, 0.0, 0.0, 1.0)
+    glEnable(GL_DEPTH_TEST)
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient)
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse)
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
+    glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess)
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+
+    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, att_constant)
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, att_linear)
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, att_quadratic)
+
+    glShadeModel(GL_SMOOTH)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+
+    glEnable(GL_TEXTURE_2D)
+    glEnable(GL_CULL_FACE)
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+    # image = Image.open("tekstura.tga")
+    image = Image.open(r"tekstura.tga")
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, 3, image.size[0], image.size[1], 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGB", 0, -1)
+    )
+
+
+def shutdown():
+    pass
+
+
+def render(time):
+    global theta
+    global active_right_triangle
+    global active_top_triangle
+    global active_left_triangle
+    global active_bottom_triangle
+    global active_square
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()
+
+    gluLookAt(viewer[0], viewer[1], viewer[2],
+              0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+
+    if left_mouse_button_pressed:
+        theta += delta_x * pix2angle
+
+    glRotatef(theta, 0.0, 1.0, 0.0)
+
+    glBegin(GL_TRIANGLES)
+    # Trojkaty
+    # H = sqrt(2) / 2 * a ~= 3.5
+
+    # Prawy trojkat
+    if active_right_triangle:
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 3.5)
+
+    # Gorny trojkat
+    if active_top_triangle:
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-5.0, 5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 3.5)
+
+    # Lewy trojkat
+    if active_left_triangle:
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 3.5)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-5.0, 5.0, 0.0)
+
+    # Dolny trojkat
+    if active_bottom_triangle:
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(5.0, -5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 3.5)
+
+    # Kwadrat
+    if active_square:
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-5.0, 5.0, 0.0)
+
     glEnd()
 
+    glFlush()
+
+
+def update_viewport(window, width, height):
+    global pix2angle
+    pix2angle = 360.0 / width
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+
+    gluPerspective(70, 1.0, 0.1, 300.0)
+
+    if width <= height:
+        glViewport(0, int((height - width) / 2), width, width)
+    else:
+        glViewport(int((width - height) / 2), 0, height, height)
+
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+
+
+def keyboard_key_callback(window, key, scancode, action, mods):
+    global active_right_triangle
+    global active_top_triangle
+    global active_left_triangle
+    global active_bottom_triangle
+    global active_square
+
+    if key == GLFW_KEY_ESCAPE and action == GLFW_PRESS:
+        glfwSetWindowShouldClose(window, GLFW_TRUE)
+
+    if key == GLFW_KEY_RIGHT and action == GLFW_RELEASE:
+        active_right_triangle = not active_right_triangle
+
+    if key == GLFW_KEY_UP and action == GLFW_RELEASE:
+        active_top_triangle = not active_top_triangle
+
+    if key == GLFW_KEY_LEFT and action == GLFW_RELEASE:
+        active_left_triangle = not active_left_triangle
+
+    if key == GLFW_KEY_DOWN and action == GLFW_RELEASE:
+        active_bottom_triangle = not active_bottom_triangle
+
+    if key == GLFW_KEY_SPACE and action == GLFW_RELEASE:
+        active_square = not active_square
+
+
+def mouse_motion_callback(window, x_pos, y_pos):
+    global delta_x
+    global mouse_x_pos_old
+
+    delta_x = x_pos - mouse_x_pos_old
+    mouse_x_pos_old = x_pos
+
+
+def mouse_button_callback(window, button, action, mods):
+    global left_mouse_button_pressed
+
+    if button == GLFW_MOUSE_BUTTON_LEFT and action == GLFW_PRESS:
+        left_mouse_button_pressed = 1
+    else:
+        left_mouse_button_pressed = 0
+
+
 def main():
-    pygame.init()
-    display = (800, 600)
-    pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
-    glTranslatef(0.0, 0.0, -5)
+    if not glfwInit():
+        sys.exit(-1)
 
-    cube_rotation = 0
-    camera_translation = [0, 0, 0]
-    camera_rotation = [0, 0, 0]
+    window = glfwCreateWindow(400, 400, __file__, None, None)
+    if not window:
+        glfwTerminate()
+        sys.exit(-1)
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
-                    # Przesuń kamerę do przodu z uwzględnieniem aktualnego obrotu
-                    camera_translation[0] -= 0.1 * math.sin(math.radians(camera_rotation[1]))
-                    camera_translation[2] += 0.1 * math.cos(math.radians(camera_rotation[1]))
-                elif event.key == pygame.K_s:
-                    # Przesuń kamerę do tyłu z uwzględnieniem aktualnego obrotu
-                    camera_translation[0] += 0.1 * math.sin(math.radians(camera_rotation[1]))
-                    camera_translation[2] -= 0.1 * math.cos(math.radians(camera_rotation[1]))
-                elif event.key == pygame.K_a:
-                    # Przesuń kamerę w lewo z uwzględnieniem aktualnego obrotu
-                    camera_translation[0] += 0.1 * math.cos(math.radians(camera_rotation[1]))
-                    camera_translation[2] += 0.1 * math.sin(math.radians(camera_rotation[1]))
-                elif event.key == pygame.K_d:
-                    # Przesuń kamerę w prawo z uwzględnieniem aktualnego obrotu
-                    camera_translation[0] -= 0.1 * math.cos(math.radians(camera_rotation[1]))
-                    camera_translation[2] -= 0.1 * math.sin(math.radians(camera_rotation[1]))
-                elif event.key == pygame.K_q:
-                    camera_rotation[1] += 5
-                elif event.key == pygame.K_e:
-                    camera_rotation[1] -= 5
+    glfwMakeContextCurrent(window)
+    glfwSetFramebufferSizeCallback(window, update_viewport)
+    glfwSetKeyCallback(window, keyboard_key_callback)
+    glfwSetCursorPosCallback(window, mouse_motion_callback)
+    glfwSetMouseButtonCallback(window, mouse_button_callback)
+    glfwSwapInterval(1)
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    startup()
+    while not glfwWindowShouldClose(window):
+        render(glfwGetTime())
+        glfwSwapBuffers(window)
+        glfwPollEvents()
+    shutdown()
 
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0, 0, 5, 0, 0, 0, 0, 1, 0)
-        glTranslatef(*camera_translation)
-        glRotatef(camera_rotation[0], 1, 0, 0)
-        glRotatef(camera_rotation[1], 0, 1, 0)
+    glfwTerminate()
 
-        glPushMatrix()
-        glRotatef(cube_rotation, 1, 1, 1)
-        draw_cube()
-        glPopMatrix()
 
-        pygame.display.flip()
-        pygame.time.wait(10)
-        cube_rotation += 1
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
